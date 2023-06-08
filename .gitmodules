@@ -1,0 +1,3 @@
+[submodule "src/prozubilib"]
+	path = src/prozubilib
+	url = git@github.com:igkuzm/prozubilib
