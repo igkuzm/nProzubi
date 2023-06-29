@@ -2,7 +2,7 @@
  * File              : input.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 02.06.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 26.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -12,6 +12,8 @@
 #include <cdk/dialog.h>
 #include <cdk/traverse.h>
 #include <curses.h>
+#include "delegate.h"
+
 
 int
 input_escape_handler(EObjectType cdktype, void *object, void *clientData, chtype input)
@@ -79,17 +81,15 @@ input_switch_focus(CDKOBJS *new, CDKOBJS *old)
 int
 input_mouse_handler(EObjectType cdktype, void *object, void *clientData, chtype input)
 {
-	CDKSCREEN *screen = clientData;
+	CDKSCREEN *screen = ((CDKOBJS *)object)->screen;
+	delegate_t *d = clientData;
 	MEVENT event;
 	if (getmouse(&event) == OK) {
 		// mouse is OK!
-		
-		CDKOBJS *obj = (CDKOBJS *)object;
-		if (screen){
-			obj = input_mouse_get_object(screen, event.x, event.y);
-			input_switch_focus(obj, getCDKFocusCurrent(screen));	
-			setCDKFocusCurrent(screen, obj);
-		}
+
+		CDKOBJS *obj = input_mouse_get_object(screen, event.x, event.y);
+		input_switch_focus(obj, getCDKFocusCurrent(screen));	
+		setCDKFocusCurrent(screen, obj);
 		
 		if (event.bstate & BUTTON1_PRESSED){
 			//left button

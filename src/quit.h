@@ -2,7 +2,7 @@
  * File              : quit.h
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 05.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #ifndef QUIT_H
@@ -10,6 +10,7 @@
 
 #include <cdk.h>
 #include <cdk/cdkscreen.h>
+#include <cdk/traverse.h>
 #include <curses.h>
 #include "delegate.h"
 #include "colors.h"
@@ -17,8 +18,11 @@
 
 
 static void 
-quit_message_show(delegate_t *d, CDKSCREEN *screen)
+quit_message_show(delegate_t *d, CDKSCREEN *s)
 {
+
+	CDKSCREEN *screen = initCDKScreen(stdscr) ;
+
 	/* *INDENT-EQLS* */
 	char *buttons[] =
 	{
@@ -48,7 +52,7 @@ quit_message_show(delegate_t *d, CDKSCREEN *screen)
 	TRUE		/* shadow */
 			);
 
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 	
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 
@@ -56,13 +60,13 @@ quit_message_show(delegate_t *d, CDKSCREEN *screen)
 	activateCDKDialog(m, NULL);
 	
 	if (m->currentButton == 1){
-		exitOKCDKScreen(d->screen);
+		exitOKCDKScreen(d->screen_main);
 		return;
 	}
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(d->screen);
-	refreshCDKScreen(screen);
+	exitOKCDKScreen(screen);
+	screen_redraw_screen_main(d);
 }
 
 #endif /* ifndef QUIT_H */

@@ -2,10 +2,11 @@
  * File              : main.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 14.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 26.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #include <cdk.h>
+#include <cdk/cdkscreen.h>
 #include <cdk/selection.h>
 #include <cdk/traverse.h>
 #include <curses.h>
@@ -13,13 +14,18 @@
 #include <stdio.h>
 #include "colors.h"
 
-#include "InfoPannel.h"
+#include "ncwidgets/src/types.h"
 #include "switcher.h"
 #include "PatientsList.h"
 #include "prozubilib/prozubilib.h"
 #include "delegate.h"
 #include "error.h"
 
+#include "ncwidgets/src/nclib.h"
+#include "ncwidgets/src/nclist.h"
+#include "ncwidgets/src/ncscreen.h"
+
+#include "MainScreen.h"
 
 int main(int argc, char *argv[])
 {
@@ -36,8 +42,7 @@ int main(int argc, char *argv[])
 	/*set delegate */
 	delegate_t d;
 	delegate_init(&d);
-	d.screen = cdkscreen;
-	d.selectedScreen = cdkscreen;
+	//d.cdkscreen = cdkscreen;
 	
 	/* open log file */
 	void *log_cb = NULL;
@@ -50,46 +55,47 @@ int main(int argc, char *argv[])
 	d.p = prozubi_init(
 			"/home/kuzmich/gProZubi/ProZubi.sqlite", 
 			"",
-			d.selectedScreen,
+			cdkscreen,
 			error_callback,
 			log,
 			log_cb);
  
+	main_screen_create(&d);
+	
 	/* fix locale */
-	setlocale(LC_ALL, "ru_RU.CP1251");
+	/*setlocale(LC_ALL, "ru_RU.CP1251");*/
+	//setlocale(LC_ALL, "ru_RU.KOI8-R");
 	
 	/* Start CDK colors. */
-	initCDKColor ();
+	//initCDKColor ();
 	
 	/* setup curses */
-	cbreak();  //Не использовать буфер для функции getch()
-	raw();
-	nonl();
-	noecho();
+	//cbreak();  //Не использовать буфер для функции getch()
+	//raw();
+	//nonl();
+	//noecho();
 
-	/* set color for main window */
-	wbkgd(cdkscreen->window, COLOR_PAIR(COLOR_WHITE_ON_BLUE));
-	
 	/* start interface */
-	CDKLABEL *info = create_info_pannel(&d, d.screen);
-	CDKSELECTION *switcher = create_switcher(&d);
-	d.patients = patients_list_create(&d);
+	//screen_init_screen_main(&d, LINES, COLS, 0, 0, COLOR_WHITE_ON_BLUE);
+	//CDKSELECTION *switcher = create_switcher(&d);
+	//d.patients = patients_list_create(&d);
 
-	/* Draw the screen. */
-	refreshCDKScreen (cdkscreen);
+	/* refresh screens */
+	//refreshCDKScreen(d.screen_main);
 
 	/* Traverse the screen */
-	traverseCDKScreen(cdkscreen);
-	//activateCDKSelection(switcher, NULL);
-
+	//traverseCDKScreen(d.screen_main);
+	
 	/* finish */
 	if (log)
 		fclose(log);
-	destroyCDKLabel(info);
-	destroyCDKSelection(switcher);
-	destroyCDKSelection(d.patients);
-	destroyCDKScreen(cdkscreen);
-	endCDK ();
+
+	//destroyCDKSelection(switcher);
+	//destroyCDKSelection(d.patients);
+
+	endwin();
+	
+	//endCDK ();
 	return 0;
 }
 

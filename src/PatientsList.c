@@ -2,11 +2,12 @@
  * File              : PatientsList.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 14.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 26.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #include "PatientsList.h"
 
+#include "ncwidgets/src/nclist.h"
 
 #include <cdk.h>
 #include <cdk/cdkscreen.h>
@@ -17,7 +18,6 @@
 #include <time.h>
 #include "prozubilib/date-time/time_local.h"
 #include "input.h"
-#include "InfoPannel.h"
 
 #include "colors.h"
 #include "prozubilib/prozubilib.h"
@@ -30,18 +30,10 @@
 
 #include "utf8tocp1251/utf8_to_cp1251.h"
 
-struct patients_list_t {
-	delegate_t *d;
-	CDKSELECTION *s;
-	struct passport_t **patients;
-	char **titles;
-	int count;
-};
-
 static int 
 patients_list_calback(void *user_data, struct passport_t *c)
 {
-	struct patients_list_t *t = user_data;
+	patients_list_t *t = user_data;
 
 	char dateOfBirth[16];
 	struct tm tp;
@@ -50,7 +42,7 @@ patients_list_calback(void *user_data, struct passport_t *c)
 
 	t->patients[t->count] = c;
 
-  char *title = MALLOC(256, error_callback(t->d->screen,
+  char *title = MALLOC(256, error_callback(t->d->screen_main,
 				"cant' allocate memory for pointer"), return 0);
 	snprintf(title, 255, "%d. %s %s %s %s %s \t\t\t                       ", 
 			t->count + 1,
@@ -65,15 +57,15 @@ patients_list_calback(void *user_data, struct passport_t *c)
 	t->count++;
 
 	t->patients = REALLOC(t->patients, t->count * 8 + 8, 
-			error_callback(t->d->screen, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_main, "can't allocate memory"), return 0);
 	
 	t->titles   = REALLOC(t->titles, t->count * 8 + 8, 
-			error_callback(t->d->screen, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_main, "can't allocate memory"), return 0);
 
 	return 0;
 }
 void
-patinets_list_free(struct patients_list_t *t)
+patinets_list_free(patients_list_t *t)
 {
 	int i;
 	for (i = 0; i < t->count; ++i) {
@@ -90,21 +82,22 @@ patinets_list_free(struct patients_list_t *t)
 }
 	
 void
-patinets_list_update(struct patients_list_t *t)
+patinets_list_update(patients_list_t *t)
 {
 	patinets_list_free(t);
 
-	t->patients = MALLOC(8, error_callback(t->d->screen, "can't allocate memory"), return);
-	t->titles   = MALLOC(8, error_callback(t->d->screen, "can't allocate memory"), return);
+	t->patients = MALLOC(8, error_callback(t->d->screen_main, "can't allocate memory"), return);
+	t->titles   = MALLOC(8, error_callback(t->d->screen_main, "can't allocate memory"), return);
 
 	prozubi_passport_foreach(t->d->p, t, patients_list_calback);
 	
-	setCDKSelectionItems(t->s, t->titles, t->count);
-	refreshCDKScreen(t->d->screen);
+	//setCDKSelectionItems(t->s, t->titles, t->count);
+	//refreshCDKScreen(t->d->screen_main);
+	nc_list_set_value(t->s, t->titles, t->count);
 }
 
 static void 
-patient_list_remove_patient_confirm(struct patients_list_t *t)
+patient_list_remove_patient_confirm(patients_list_t *t)
 {
 	/* *INDENT-EQLS* */
 	char *buttons[] =
@@ -118,7 +111,7 @@ patient_list_remove_patient_confirm(struct patients_list_t *t)
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	t->d->screen	/* cdkscreen */,
+	t->d->screen_main	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -131,23 +124,23 @@ patient_list_remove_patient_confirm(struct patients_list_t *t)
 	TRUE		/* shadow */
 			);
 
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, t->d);\
 
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 
 	/* Activate the entry field. */
 	activateCDKDialog(m, NULL);
 	
-	if (m->currentButton == 1)
-		if (!prozubi_passport_remove(t->d->p, t->patients[t->s->currentItem]))
-			patinets_list_update(t);
+	//if (m->currentButton == 1)
+		//if (!prozubi_passport_remove(t->d->p, t->patients[t->s->currentItem]))
+			//patinets_list_update(t);
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(t->d->screen);
+	refreshCDKScreen(t->d->screen_main);
 }
 
 static void 
-patinet_list_remove_patient_message_show(struct patients_list_t *t)
+patinet_list_remove_patient_message_show(patients_list_t *t)
 {
 	/* *INDENT-EQLS* */
 	char *buttons[] =
@@ -156,21 +149,21 @@ patinet_list_remove_patient_message_show(struct patients_list_t *t)
 		COLOR_STR(COLOR_RED_ON_WHITE, " Удалить "), 
 	};
 
-	struct passport_t *selectedPatient = t->patients[t->s->currentItem];
+	//struct passport_t *selectedPatient = t->patients[t->s->currentItem];
   
 	char **message = malloc(8*3); 
 	message[0] = "удалить данные пациента";
-	char fio[256];
-	sprintf(fio, "%s %s %s?", 
-			selectedPatient->familiya,
-			selectedPatient->imia,
-			selectedPatient->otchestvo);
-	message[1] = fio;
+	//char fio[256];
+	//sprintf(fio, "%s %s %s?", 
+			//selectedPatient->familiya,
+			//selectedPatient->imia,
+			//selectedPatient->otchestvo);
+	//message[1] = fio;
 
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	t->d->screen	/* cdkscreen */,
+	t->d->screen_main	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -185,7 +178,7 @@ patinet_list_remove_patient_message_show(struct patients_list_t *t)
 
 	free(message);
 
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, t->d);\
 	
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 
@@ -194,7 +187,7 @@ patinet_list_remove_patient_message_show(struct patients_list_t *t)
 	int ret = m->currentButton;
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(t->d->screen);
+	refreshCDKScreen(t->d->screen_main);
 	
 	if (ret == 1)
 		patient_list_remove_patient_confirm(t);
@@ -207,9 +200,9 @@ petients_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 		       chtype input GCC_UNUSED)
 {
 	CDKSELECTION *s = object;
-	struct patients_list_t *t = clientData;
-	info_pannel_set_text(t->d, 
-			"CTRL-q - выход, r - обновить, a - добавить, e - редактировать, d - удалить, ENTER - визиты");
+	patients_list_t *t = clientData;
+	//info_pannel_set_text(t->d, 
+			//"CTRL-q - выход, r - обновить, a - добавить, e - редактировать, d - удалить, ENTER - визиты");
 	int selected = getCDKSelectionCurrent(s);
 	
 	switch (input) {
@@ -220,7 +213,7 @@ petients_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 			}
 		case 'q': case CTRL('q'):
 			{
-				quit_message_show(t->d, t->d->screen);
+				quit_message_show(t->d, t->d->screen_main);
 				break;
 			}
 		case 'r':
@@ -270,43 +263,69 @@ petients_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 	return 1;
 }
 
-CDKSELECTION *
+//CDKSELECTION *
+patients_list_t *
 patients_list_create(
 		delegate_t *d
 		)
 {  
-	char * choises[] = 
-	{""};
-	CDKSELECTION *s =
-					newCDKSelection(
-							d->screen, 
-							41, 
-							3, 
-							1,
-							LINES - 3,
-							COLS-40,
-							"</B>Список пациентов:<!B>", 
-							NULL, 
-						  0, 
-							choises,
-							1,
-							A_REVERSE,
-							FALSE, 
-							FALSE
-							);
+	//char * choises[] = 
+	//{""};
+	//CDKSELECTION *s =
+					//newCDKSelection(
+							//d->screen_main, 
+							//41, 
+							//0, 
+							//1,
+							//LINES - 1,
+							//COLS-40,
+							//"</B>Список пациентов:<!B>", 
+							//NULL, 
+							//0, 
+							//choises,
+							//1,
+							//A_REVERSE,
+							//FALSE, 
+							//TRUE
+							//);
 
-	struct patients_list_t t;
-	t.count = 0;
-	t.d = d;
-	t.s = s;
-	t.patients = NULL;
-	t.titles = NULL;
+	//struct patients_list_t t;
+	//t.count = 0;
+	//t.d = d;
+	//t.s = s;
+	//t.patients = NULL;
+	//t.titles = NULL;
 
-	patinets_list_update(&t);
+	//patinets_list_update(&t);
 
-	wbkgd(s->win, COLOR_PAIR(COLOR_WHITE_ON_BLUE));
-	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, d->screen);\
-  setCDKSelectionPreProcess (s, petients_list_preHandler, &t);
+	//wbkgd(s->win, COLOR_PAIR(COLOR_WHITE_ON_BLUE));
+	//wbkgd(s->shadowWin, COLOR_PAIR(COLOR_WHITE_ON_BLUE));
+	//bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, d);
+	//setCDKSelectionPreProcess (s, petients_list_preHandler, &t);
 
-	return s;
+	//return s;
+	
+	nclist_t *s = nc_list_new(
+			NULL, 
+			"</B>Список пациентов:<!B>", 
+			LINES, COLS - 40, 0, 40, 
+			COLOR_WHITE_ON_BLUE, 
+			NULL, 
+			0, 
+			TRUE, 
+			FALSE
+			);
+	
+	patients_list_t *t = malloc(sizeof(patients_list_t));
+	if (!t)
+		return NULL;
+	t->count = 0;
+	t->d = d;
+	t->s = s;
+	t->patients = NULL;
+	t->titles = NULL;
+
+	patinets_list_update(t);
+
+	return t;
 }

@@ -2,7 +2,7 @@
  * File              : PatientEdit.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 22.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -18,7 +18,6 @@
 #include <cdk/mentry.h>
 #include <cdk/template.h>
 #include <time.h>
-#include "InfoPannel.h"
 #include "input.h"
 #include "TextUTF8Handler.h"
 
@@ -31,7 +30,7 @@ _patient_edit_q_handler(
 				)
 {
 	delegate_t *d = clientData;
-	exitOKCDKScreen(d->patientEdit);
+	exitOKCDKScreen(d->screen_patient_edit);
 	return 1;
 }
 
@@ -119,10 +118,10 @@ patient_edit_create(
 	p.patient = patient;
 	
 	/* init window and screen */
-	p.screen = screen_init_patientEdit(d, 35, 40, LINES/4, COLS/4, COLOR_BLACK_ON_WHITE);
+	p.screen = screen_init_screen_patient_edit(d, 35, 40, LINES/4, COLS/4, COLOR_BLACK_ON_WHITE);
 
-	info_pannel_set_text(d, 
-			"CTRL-q - закрыть, TAB - далее");
+	//info_pannel_set_text(d, 
+			//"CTRL-q - закрыть, TAB - далее");
 	
 	int x = COLS/4, y = LINES/4;
 	/* init widgets */
@@ -148,7 +147,7 @@ patient_edit_create(
 	bindCDKObject (vENTRY, m_##name, CTRL('q'), _patient_edit_q_handler, d);\
 	size_t text_position_##name = 0;\
 	setCDKMentryPreProcess (m_##name, entry_text_preHandler, &text_position_##name);\
-	bindCDKObject (vENTRY, m_##name, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vENTRY, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	if (patient->name)\
 		setCDKEntryValue(m_##name, patient->name);\
 	m_##name->leftChar = 0;\
@@ -174,7 +173,7 @@ const char *plate = "";
 	y += 3;\
 	setCDKTemplateBackgroundColor(m_##name, "</57>");\
 	bindCDKObject (vTEMPLATE, m_##name, CTRL('q'), _patient_edit_q_handler, d);\
-	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	if (patient->name)\
 		setCDKTemplateValue(m_##name, patient->name);
 	
@@ -195,7 +194,7 @@ const char *plate = "";
 	y += 3;\
 	setCDKTemplateBackgroundColor(m_##name, "</57>");\
 	bindCDKObject (vTEMPLATE, m_##name, CTRL('q'), _patient_edit_q_handler, d);\
-	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	{\
 		struct tm tm;\
 		sec_to_tm(patient->name, &tm);\
@@ -226,7 +225,7 @@ const char *plate = "";
 	bindCDKObject (vMENTRY, m_##name, CTRL('q'), _patient_edit_q_handler, d);\
 	size_t text_position_##name = 0;\
 	setCDKMentryPreProcess (m_##name, mentry_text_preHandler, &text_position_##name);\
-	bindCDKObject (vMENTRY, m_##name, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vMENTRY, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	if (patient->name)\
 		setCDKMentryValue(m_##name, patient->name);\
 	m_##name->currentCol = 0;
@@ -251,7 +250,7 @@ PATIENT_EDIT_TYPES
 	ok->callback = _patient_edit_ok_callback;
 	ok->callbackData = &p;
 	bindCDKObject (vBUTTON, ok, CTRL('q'), _patient_edit_q_handler, d);\
-	bindCDKObject (vBUTTON, ok, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vBUTTON, ok, KEY_MOUSE, input_mouse_handler, d);\
 
 CDKBUTTON *cancel = newCDKButton(
 			p.screen, 
@@ -265,11 +264,11 @@ CDKBUTTON *cancel = newCDKButton(
 	cancel->callback = _patient_edit_cancel_callback;
 	cancel->callbackData = &p;
 	bindCDKObject (vBUTTON, cancel, CTRL('q'), _patient_edit_q_handler, d);\
-	bindCDKObject (vBUTTON, cancel, KEY_MOUSE, input_mouse_handler, p.screen);\
+	bindCDKObject (vBUTTON, cancel, KEY_MOUSE, input_mouse_handler, d);\
 
 	/* start traverse */
 	refreshCDKScreen(p.screen);
 	traverseCDKScreen(p.screen);
 
-	screen_destroy_patientEdit(d);
+	screen_destroy_screen_patient_edit(d);
 }

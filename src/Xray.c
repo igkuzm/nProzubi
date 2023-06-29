@@ -2,7 +2,7 @@
  * File              : Xray.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 01.06.2023
- * Last Modified Date: 06.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -35,7 +35,7 @@ xray_list_update_cb(void *user_data, struct image_t *c)
 
 	d->images[d->imagesCount] = c;
 
-  char *title = MALLOC(256, error_callback(d->screen,
+  char *title = MALLOC(256, error_callback(d->screen_main,
 				"cant' allocate memory for pointer"), return 0);
 	snprintf(title, 255, "%d. %s %s\t\t\t                       ", 
 			d->imagesCount + 1,
@@ -48,11 +48,11 @@ xray_list_update_cb(void *user_data, struct image_t *c)
 	
 	// realloc arrays
   d->imagesTitles = REALLOC(d->imagesTitles, d->imagesCount * 8 + 8, 
-			error_callback(d->xray,
+			error_callback(d->screen_xray,
 			"cant' reallocate memory for pointer"), return 0);
 
   d->images = REALLOC(d->images, (d->imagesCount + 2) * 8, 
-			error_callback(d->xray,
+			error_callback(d->screen_xray,
 			"cant' reallocate memory for pointer"), return 0);
 
 	return 0;
@@ -84,14 +84,14 @@ xray_list_update(delegate_t *d,
 	xray_list_free(d);
 	
 	/* allocate and fill data */
-	d->images = MALLOC(8, error_callback(d->screen,
+	d->images = MALLOC(8, error_callback(d->screen_xray,
 				"cant' allocate memory for pointer"), return);
-	d->imagesTitles = MALLOC(8, error_callback(d->screen,
+	d->imagesTitles = MALLOC(8, error_callback(d->screen_xray,
 				"cant' allocate memory for pounter"), return);
 	prozubi_image_foreach(d->p, node->c->id, d, xray_list_update_cb);
 
 	setCDKSelectionItems (d->imagesList, d->imagesTitles, d->imagesCount);
-	refreshCDKScreen(d->xray);
+	refreshCDKScreen(d->screen_xray);
 }
 
 struct jpg_write_s {
@@ -104,7 +104,7 @@ void jpg_write_func(void *context, void *data, int size){
 	struct jpg_write_s *s = context; 
 	// realloc data
 	s->data = REALLOC(s->data, s->len + size,
-			error_callback(s->d->xray, "can't realloc"), return;);
+			error_callback(s->d->screen_xray, "can't realloc"), return;);
 	// copy
 	memcpy(&(s->data[s->len]), data, size);
 	s->len += size;
@@ -133,7 +133,7 @@ xray_remove_image_confirm(
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	d->screen	/* cdkscreen */,
+	d->screen_xray	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -146,7 +146,7 @@ xray_remove_image_confirm(
 	TRUE		/* shadow */
 			);
 
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 
 	/* Activate the entry field. */
@@ -185,7 +185,7 @@ xray_remove_image_message_show(
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	d->screen	/* cdkscreen */,
+	d->screen_xray	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -200,7 +200,7 @@ xray_remove_image_message_show(
 
 	free(message);
 
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 	
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 
@@ -209,7 +209,7 @@ xray_remove_image_message_show(
 	int ret = m->currentButton;
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(d->xray);
+	refreshCDKScreen(d->screen_xray);
 	
 	if (ret == 1)
 		xray_remove_image_confirm(d, node, image);
@@ -247,7 +247,7 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 						image->len_data, 
 						COLS/2, 0, 
 						&ascii,
-						d->cases,
+						d->screen_xray,
 						error_callback
 						);
 
@@ -256,7 +256,7 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				
 				//alloc info
 				char **info = MALLOC(8, 
-					error_callback(d->cases, "error allocate memory for CDKVIEWER info"), return 0);
+					error_callback(d->screen_xray, "error allocate memory for CDKVIEWER info"), return 0);
 				int lines = 0;
 
 				size_t i;
@@ -264,7 +264,7 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				for (i = 0; i < size; ++i) {
 					if (ascii[i] == '\n'){
 						info = REALLOC(info, 8 * lines + 8 + 8, 
-							error_callback(d->xray, "error reallocate memory for CDKVIEWER info"), return 0);
+							error_callback(d->screen_xray, "error reallocate memory for CDKVIEWER info"), return 0);
 						ascii[i] = 0;
 						info[lines++] = &(ascii[++i]);
 					}
@@ -272,10 +272,10 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				
 				char * buttons[] = { "OK"};
 
-				screen_init_imageshow(d, LINES, COLS, 0, 0, 0);
+				screen_init_screen_imageshow(d, LINES, COLS, 0, 0, 0);
 
 				CDKVIEWER *m = newCDKViewer (
-				d->imageshow	/* cdkscreen */,
+				d->screen_imageshow	/* cdkscreen */,
 				0		/* xpos */,
 				0		  /* ypos */,
 				LINES		/* height */,
@@ -288,12 +288,12 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				);
 
 				if (!m){
-					error_callback(d->xray, "can't draw CDKVIEWER - the screen is too small");
+					error_callback(d->screen_xray, "can't draw CDKVIEWER - the screen is too small");
 					return 0;
 				}
 				setCDKViewerInfoLine(m, FALSE);
 				
-				bindCDKObject (vVIEWER, m, KEY_MOUSE, input_mouse_handler, NULL);\
+				bindCDKObject (vVIEWER, m, KEY_MOUSE, input_mouse_handler, d);\
 				
 				setCDKViewerInfo(m, info, lines, TRUE);
 				
@@ -303,18 +303,15 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				free(info);
 			
 				/* redraw CDK */
-				screen_destroy_imageshow(d);
-				refreshCDKScreen(d->screen);
-				screen_redraw_cases(d);
-				screen_redraw_xray(d);
+				screen_destroy_screen_imageshow(d);
 				return 0;
 			}
 		case 'a':
 			{
-				screen_init_imageselect(d, LINES/2, COLS/2, LINES/4, COLS/4, COLOR_BLACK_ON_WHITE);
+				screen_init_screen_imageselect(d, LINES/2, COLS/2, LINES/4, COLS/4, COLOR_BLACK_ON_WHITE);
 				
 				CDKFSELECT *s = newCDKFselect (            
-				d->imageselect /* cdkscreen */,       
+				d->screen_imageselect /* cdkscreen */,       
 				0   /* xpos */,                  
 				0   /* ypos */,                  
 				LINES/2   /* height */,                
@@ -333,14 +330,14 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				);           
 				
 				if (!s){
-					error_callback(d->cases, "can't draw CDKFSELECT - the screen os too small");
+					error_callback(d->screen_imageselect, "can't draw CDKFSELECT - the screen os too small");
 					return 0;
 				}
 				wbkgd(s->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 				wbkgd(s->entryField->fieldWin, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
 				setCDKFselectBackgroundColor(s, "</57>");
 	
-				bindCDKObject (vFSELECT, s, KEY_MOUSE, input_mouse_handler, NULL);\
+				bindCDKObject (vFSELECT, s, KEY_MOUSE, input_mouse_handler, d);\
 
 				/* activate */
 				char * ret = 
@@ -371,7 +368,7 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 							//add image to base, update viewer and close fselect
 							
 							struct jpg_write_s s;
-							s.data = MALLOC(1, error_callback(d->xray, 
+							s.data = MALLOC(1, error_callback(d->screen_imageselect, 
 									"can't allocate struct jpg_write_s"), continue;);
 							s.len = 0;
 							s.d = d;
@@ -398,10 +395,7 @@ xray_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				
 				/* destroy widgets */
 				destroyCDKFselect(s);
-				screen_destroy_imageselect(d);
-				refreshCDKScreen(d->screen);
-				screen_redraw_cases(d);
-				screen_redraw_xray(d);
+				screen_destroy_screen_imageselect(d);
 				return 0;;
 		}
 		case 'q': case CTRL('q'):
@@ -423,14 +417,14 @@ xray_create(
 		delegate_t *d)
 {
 	/* init window and screen */
-	screen_init_xray(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
+	screen_init_screen_xray(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
 
 	char * choises[] = 
 	{""};
 	
 	CDKSELECTION *imagesList =
 		newCDKSelection(
-				d->xray, 
+				d->screen_xray, 
 				0, 
 				0, 
 				0,
@@ -445,13 +439,13 @@ xray_create(
 				FALSE, 
 				TRUE);
 	if (!imagesList){
-		error_callback(d->cases, "can't draw CDKSELECTION - the screen os too small");
+		error_callback(d->screen_xray, "can't draw CDKSELECTION - the screen os too small");
 		return;
 	}
 
 	d->imagesList = imagesList;
 	
-	bindCDKObject (vSELECTION, imagesList, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vSELECTION, imagesList, KEY_MOUSE, input_mouse_handler, d);\
 	
 	wbkgd(imagesList->shadowWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
 	
@@ -469,5 +463,5 @@ xray_create(
 	destroyCDKSelection(imagesList);
 	xray_list_free(d);
 	
-	screen_destroy_xray(d);
+	screen_destroy_screen_xray(d);
 }

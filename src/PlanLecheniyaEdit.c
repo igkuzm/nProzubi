@@ -2,13 +2,12 @@
  * File              : PlanLecheniyaEdit.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 02.06.2023
- * Last Modified Date: 06.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #include "PlanLecheniyaEdit.h"
 #include "colors.h"
 #include "input.h"
-#include "InfoPannel.h"
 #include "TextUTF8Handler.h"
 #include "prozubilib/planlecheniya.h"
 
@@ -40,7 +39,7 @@ _plan_lecheniya_edit_q_handler(
 				)
 {
 	delegate_t *d = clientData;
-	exitOKCDKScreen(d->planLecheniyaEdit);
+	exitOKCDKScreen(d->screen_plan_lecheniya_edit);
 
 	return 1;
 }
@@ -100,12 +99,12 @@ plan_lecheniya_edit_create(
 	int h = 18, w = 34;
 	int x = COLS/3 + COLS/6 - w/2, y = LINES/3 + LINES/6 - h/2;
 	
-	screen_init_planLecheniyaEdit(d, h, w, y, x, COLOR_BLACK_ON_WHITE);
-	CDKSCREEN *cdkscreen = d->planLecheniyaEdit;
+	screen_init_screen_plan_lecheniya_edit(d, h, w, y, x, COLOR_BLACK_ON_WHITE);
+	CDKSCREEN *cdkscreen = d->screen_plan_lecheniya_edit;
 	p.screen = cdkscreen;
 	
-	info_pannel_set_text(d, 
-			"CTRL-q - закрыть, TAB - далее");
+	//info_pannel_set_text(d, 
+			//"CTRL-q - закрыть, TAB - далее");
 	
 	/* init widgets */
 
@@ -132,7 +131,7 @@ plan_lecheniya_edit_create(
 	if (name)\
 		setCDKMentryValue(m_##name, name);\
 	size_t text_position_##name = 0;\
-	bindCDKObject (vMENTRY, m_##name, KEY_MOUSE, input_mouse_handler, cdkscreen);\
+	bindCDKObject (vMENTRY, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	setCDKMentryPreProcess (m_##name, mentry_text_preHandler, &text_position_##name);\
 	m_##name->currentCol = 0;
 	
@@ -157,7 +156,7 @@ plan_lecheniya_edit_create(
 		setCDKTemplateValue(m_##name, name);\
 	y += 3;\
 	setCDKTemplateBackgroundColor(m_##name, "</57>");\
-	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, cdkscreen);\
+	bindCDKObject (vTEMPLATE, m_##name, KEY_MOUSE, input_mouse_handler, d);\
 	bindCDKObject (vTEMPLATE, m_##name, CTRL('q'), _plan_lecheniya_edit_q_handler, d);\
 	
 
@@ -177,7 +176,7 @@ PLAN_LECHENIYA_EDIT_TYPES
 	ok->callback = _plan_lecheniya_edit_ok_callback;
 	ok->callbackData = &p;
 	bindCDKObject (vBUTTON, ok, CTRL('q'), _plan_lecheniya_edit_q_handler, d);\
-	bindCDKObject (vBUTTON, ok, KEY_MOUSE, input_mouse_handler, cdkscreen);\
+	bindCDKObject (vBUTTON, ok, KEY_MOUSE, input_mouse_handler, d);\
 
 CDKBUTTON *cancel = newCDKButton(
 			cdkscreen, 
@@ -191,7 +190,7 @@ CDKBUTTON *cancel = newCDKButton(
 	cancel->callback = _plan_lecheniya_edit_cancel_callback;
 	cancel->callbackData = cdkscreen;
 	bindCDKObject (vBUTTON, cancel, CTRL('q'), _plan_lecheniya_edit_q_handler, d);\
-	bindCDKObject (vBUTTON, cancel, KEY_MOUSE, input_mouse_handler, cdkscreen);\
+	bindCDKObject (vBUTTON, cancel, KEY_MOUSE, input_mouse_handler, d);\
 
 
 	/* start traverse */
@@ -199,5 +198,5 @@ CDKBUTTON *cancel = newCDKButton(
 	traverseCDKScreen(cdkscreen);
 
 	/* destroy widgets */
-	screen_destroy_planLecheniyaEdit(d);
+	screen_destroy_screen_plan_lecheniya_edit(d);
 }

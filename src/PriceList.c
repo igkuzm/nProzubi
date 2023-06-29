@@ -2,7 +2,7 @@
  * File              : PriceList.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 05.06.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #include "PriceList.h"
@@ -15,7 +15,6 @@
 #include "colors.h"
 #include "input.h"
 #include "error.h"
-#include "InfoPannel.h"
 #include "prozubilib/prozubilib.h"
 #include "prozubilib/alloc.h"
 #include "NomenklaruraList.h"
@@ -37,17 +36,17 @@ price_list_update_callback(void *userdata, struct price_t *price){
 	struct price_list_t *t = userdata;
 	t->prices[t->count] = price;
 	t->titles[t->count] = MALLOC(256, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_price_list, "can't allocate memory"), return 0);
 	snprintf(t->titles[t->count], 255, "%d. %s %s %s", 
 			t->count + 1, price->title, price->price, price->kod);
 
 	t->count++;
 
 	t->prices = REALLOC(t->prices, t->count * 8 + 8, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_price_list, "can't allocate memory"), return 0);
 	
 	t->titles = REALLOC(t->titles, t->count * 8 + 8, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_price_list, "can't allocate memory"), return 0);
 
 	return 0;
 }
@@ -66,13 +65,13 @@ price_list_update(struct price_list_t *t)
 	if (t->titles)
 		free(t->titles);
 	
-	t->prices = MALLOC(8, error_callback(t->d->priceList, "can't allocate memory"), return);
-	t->titles = MALLOC(8, error_callback(t->d->priceList, "can't allocate memory"), return);
+	t->prices = MALLOC(8, error_callback(t->d->screen_price_list, "can't allocate memory"), return);
+	t->titles = MALLOC(8, error_callback(t->d->screen_price_list, "can't allocate memory"), return);
 
 	prozubi_price_foreach(t->d->p, t, price_list_update_callback);
 	
 	setCDKSelectionItems(t->s, t->titles, t->count);
-	refreshCDKScreen(t->d->priceList);
+	refreshCDKScreen(t->d->screen_price_list);
 }
 
 static int 
@@ -93,7 +92,7 @@ prices_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 			}
 		case 'q': case CTRL('q'):
 			{
-				exitOKCDKScreen(t->d->priceList);
+				exitOKCDKScreen(t->d->screen_price_list);
 				return 0;
 			}
 		case 'a':
@@ -119,14 +118,14 @@ price_list_create(
 		)
 {
 	/* init window and screen */
-	screen_init_priceList(d, LINES/2, COLS/2, LINES/4, COLS/4, COLOR_BLACK_ON_YELLOW);
+	screen_init_screen_price_list(d, LINES/2, COLS/2, LINES/4, COLS/4, COLOR_BLACK_ON_YELLOW);
 	char * choises[] = 
 	{""};
 	
 	CDKSELECTION 
 		*s =
 					newCDKSelection(
-							d->priceList, 
+							d->screen_price_list, 
 							COLS/4, 
 							LINES/4, 
 							0,
@@ -144,7 +143,7 @@ price_list_create(
 
 	d->casesList = s;
 	setCDKSelectionBackgroundColor(s, COLOR_N(COLOR_BLACK_ON_YELLOW));
-	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, d);\
 
 	struct price_list_t t;
 	t.d = d;
@@ -160,15 +159,15 @@ price_list_create(
 	setCDKSelectionPreProcess (s, prices_list_preHandler, &t);
 	setCDKSelectionPostProcess (s, screen_update_postHandler, NULL);
 	
-	info_pannel_set_text(d, 
-			"CTRL-q - закрыть, ENTER - редактировать");
+	/*info_pannel_set_text(d, */
+			/*"CTRL-q - закрыть, ENTER - редактировать");*/
 	
 	/* start traverse */
-	traverseCDKScreen(d->priceList);
+	traverseCDKScreen(d->screen_price_list);
 
 	/* destroy widgets */
 	destroyCDKSelection(s);
 
-	screen_destroy_priceList(d);
+	screen_destroy_screen_price_list(d);
 }
 

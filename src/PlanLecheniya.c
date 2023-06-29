@@ -2,13 +2,12 @@
  * File              : PlanLecheniya.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 01.06.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 10.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 #include "PlanLecheniya.h"
 
 #include "colors.h"
-#include "InfoPannel.h"
 #include "error.h"
 #include "PlanLecheniyaEdit.h"
 #include "input.h"
@@ -44,7 +43,7 @@ plan_lecheniya_update_callback(
 {
 	PlanLecheniya *pl = userdata;
 	char *str =  MALLOC(BUFSIZ, 
-			error_callback(pl->d->planLecheniya, STR("can't allocate memory: %d", BUFSIZ)), 
+			error_callback(pl->d->screen_plan_lecheniya, STR("can't allocate memory: %d", BUFSIZ)), 
 			return NULL);
 
 	pl->t[pl->count] = t; 
@@ -161,7 +160,7 @@ plan_lecheniya_handler(
 					
 					plan_lecheniya_update(pl);
 					pl->s->currentItem = selected;
-					refreshCDKScreen(pl->d->planLecheniya);
+					refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				}
 				else if (pl->t[selected]->type == PLANLECHENIYA_TYPE_STAGE_DURATION){
 					int count = atoi(pl->t[selected]->count);
@@ -174,7 +173,7 @@ plan_lecheniya_handler(
 					
 					plan_lecheniya_update(pl);
 					pl->s->currentItem = selected;
-					refreshCDKScreen(pl->d->planLecheniya);
+					refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				}
 				return 0;
 			}
@@ -193,7 +192,7 @@ plan_lecheniya_handler(
 							count);	
 					plan_lecheniya_update(pl);
 					pl->s->currentItem = selected;
-					refreshCDKScreen(pl->d->planLecheniya);
+					refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				}
 				else if (pl->t[selected]->type == PLANLECHENIYA_TYPE_STAGE_DURATION){
 					int count = atoi(pl->t[selected]->count);
@@ -207,7 +206,7 @@ plan_lecheniya_handler(
 							count);	
 					plan_lecheniya_update(pl);
 					pl->s->currentItem = selected;
-					refreshCDKScreen(pl->d->planLecheniya);
+					refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				}
 
 
@@ -221,7 +220,7 @@ plan_lecheniya_handler(
 				prozubi_planlecheniya_add_stage(pl->d->p, pl->c->planlecheniya);
 				plan_lecheniya_update(pl);
 				pl->s->currentItem = selected;
-				refreshCDKScreen(pl->d->planLecheniya);
+				refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				return 1;
 			}
 		
@@ -229,11 +228,10 @@ plan_lecheniya_handler(
 			{
 				pl->stage_index = pl->t[selected]->stageIndex, 
 				price_list_create(pl->d, pl, price_add_callback);
-				screen_redraw_cases(pl->d);
-				screen_redraw_planLecheniya(pl->d);
+				screen_redraw_screen_plan_lecheniya(pl->d);
 				plan_lecheniya_update(pl);
 				pl->s->currentItem = selected;
-				refreshCDKScreen(pl->d->planLecheniya);
+				refreshCDKScreen(pl->d->screen_plan_lecheniya);
 				return 1;
 			}
 
@@ -252,15 +250,15 @@ plan_lecheniya_create(
 {
 
 	/* init window and screen */
-	screen_init_planLecheniya(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
+	screen_init_screen_plan_lecheniya(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
 	
 	PlanLecheniya pl = {d, c, NULL, NULL, 0, NULL, -1};
 	
 	/* allocate titles */
 	pl.titles = MALLOC(8 * MAX_TITLES, 
-			error_callback(d->planLecheniya, "can't allocate memory"), return);
+			error_callback(d->screen_plan_lecheniya, "can't allocate memory"), return);
 	pl.t = MALLOC(8 * MAX_TITLES, 
-			error_callback(d->planLecheniya, "can't allocate memory"), return);
+			error_callback(d->screen_plan_lecheniya, "can't allocate memory"), return);
 	int i;
 	for (i = 0; i < MAX_TITLES; ++i) {
 		pl.titles[i] = NULL;
@@ -273,7 +271,7 @@ plan_lecheniya_create(
 	CDKSELECTION 
 		*s =
 					newCDKSelection(
-							d->planLecheniya, 
+							d->screen_plan_lecheniya, 
 							0, 
 							0, 
 							1,
@@ -297,12 +295,12 @@ plan_lecheniya_create(
 	
 	bindCDKObject(vSELECTION, s, 'q', input_escape_handler, NULL);
 	bindCDKObject(vSELECTION, s, CTRL('q'), input_escape_handler, NULL);
-	bindCDKObject(vSELECTION, s, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject(vSELECTION, s, KEY_MOUSE, input_mouse_handler, d);\
 	setCDKMentryPreProcess (s, plan_lecheniya_handler, &pl);
 	setCDKSelectionPostProcess (s, screen_update_postHandler, NULL);
 	
-	info_pannel_set_text(d, 
-			"ESC - закрыть, a - доб. этап, i - доб., d - удалить, +/- изменить кол-во");
+	/*info_pannel_set_text(d, */
+			/*"ESC - закрыть, a - доб. этап, i - доб., d - удалить, +/- изменить кол-во");*/
 	
 	/* activate */
 	int ret = activateCDKSelection(s, NULL);
@@ -320,5 +318,5 @@ plan_lecheniya_create(
 	free(pl.titles);
 
 	/* destroy screen */
-	screen_destroy_planLecheniya(d);
+	screen_destroy_screen_plan_lecheniya(d);
 }		

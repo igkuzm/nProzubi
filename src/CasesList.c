@@ -2,7 +2,7 @@
  * File              : CasesList.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 27.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -16,14 +16,16 @@
 #include "delegate.h"
 #include "colors.h"
 #include "CaseEdit.h"
-#include "InfoPannel.h"
 #include "error.h"
+#include "ncwidgets/src/types.h"
+#include "ncwidgets/src/nclist.h"
 #include "input.h"
 #include "TextUTF8Handler.h"
 
 struct cases_list_t {
 	delegate_t *d;
-	CDKSELECTION *s;
+	//CDKSELECTION *s;
+	nclist_t *s;
 	struct passport_t *patient;
 	char **list;
 	int count;
@@ -42,9 +44,9 @@ cases_list_callback(
 {
 	struct cases_list_t *t = user_data;
 
-	char *str = MALLOC(BUFSIZ,
-			error_callback(t->d->cases, "cant't allocate memory for string"),
-			return NULL);
+	char *str = malloc(BUFSIZ);
+	if (!str)
+		return NULL;
 
 	if (parent == NULL) {
 		sprintf(str, "%s                                      ", n->title ? n->title : ""); 
@@ -55,15 +57,15 @@ cases_list_callback(
 	t->list [t->count] = str;
 	t->nodes[t->count] = n;
 	
+	t->list = realloc(t->list, (t->count + 3) * 8); 
+	if (!t->list)
+		return NULL;
+	
+	t->nodes = realloc(t->nodes, (t->count + 3) * 8); 
+	if (!t->nodes)
+		return NULL;
+	
 	t->count++;
-	
-	t->list = REALLOC(t->list, (t->count + 2) * 8,
-			error_callback(t->d->cases, "cant't reallocate memory for s->list"),
-			return NULL);
-	
-	t->nodes = REALLOC(t->nodes, (t->count + 2) * 8,
-			error_callback(t->d->cases, "cant't reallocate memory for s->nodes"),
-			return NULL);
 
 	return str;
 }
@@ -99,6 +101,8 @@ cases_list_free(struct cases_list_t *t)
 	if(t->nodes)
 		free(t->nodes);
 	t->nodes = NULL;
+
+	t->count = 0;
 }
 
 static void 
@@ -118,7 +122,7 @@ cases_list_remove_case_confirm(struct cases_list_t *t, struct case_list_node *no
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	d->cases	/* cdkscreen */,
+	d->screen_cases	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -132,7 +136,7 @@ cases_list_remove_case_confirm(struct cases_list_t *t, struct case_list_node *no
 			);
 
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 
 	/* Activate the entry field. */
 	activateCDKDialog(m, NULL);
@@ -144,7 +148,7 @@ cases_list_remove_case_confirm(struct cases_list_t *t, struct case_list_node *no
 		}
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(d->cases);
+	refreshCDKScreen(d->screen_cases);
 }
 
 static void 
@@ -175,7 +179,7 @@ cases_list_remove_case_message_show(struct cases_list_t *t, struct case_list_nod
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	d->cases	/* cdkscreen */,
+	d->screen_cases	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -191,14 +195,14 @@ cases_list_remove_case_message_show(struct cases_list_t *t, struct case_list_nod
 	free(message);
 
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 
 	/* Activate the entry field. */
 	activateCDKDialog(m, NULL);
 	int ret = m->currentButton; 
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(d->cases);
+	refreshCDKScreen(d->screen_cases);
 	
 	if (ret == 1)
 		cases_list_remove_case_confirm(t, node);
@@ -212,8 +216,8 @@ cases_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 	CDKSELECTION *sel = object;
 	struct cases_list_t *t = clientData;
 	
-	info_pannel_set_text(t->d, 
-			"CTRL-q - закрыть, ENTER - редактировать");
+	//info_pannel_set_text(t->d, 
+			//"CTRL-q - закрыть, ENTER - редактировать");
 
 	switch (input) {
 		case KEY_ENTER:
@@ -278,7 +282,7 @@ cases_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 			}
 		case 'q': case CTRL('q'):
 			{
-				exitOKCDKScreen(t->d->cases);
+				exitOKCDKScreen(t->d->screen_cases);
 				cases_list_free(t);
 				break;
 			}
@@ -290,17 +294,96 @@ cases_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 	return 1;
 }
 
+CBRET cases_list_callback_(void *userdata, enum SCREEN type, void *object, chtype key)
+{
+	struct cases_list_t *t = userdata;
+	
+	switch (key) {
+		case KEY_ENTER: case KEY_RETURN: case '\r': 
+			{
+				int index = nc_list_get_selected(t->s);
+				struct case_list_node *node = t->nodes[index];
+				switch (node->type) {
+					case CASES_LIST_TYPE_TEXT: 
+						{
+							case_edit_text_create(node, t->d);
+							cases_list_update(t);
+							break;
+						}
+					case CASES_LIST_TYPE_COMBOBOX: 
+						{
+							case_edit_combobox_create(node, t->d);
+							cases_list_update(t);
+							break;
+						}
+					case CASES_LIST_TYPE_DATE: 
+						{
+							//case_edit_date_create(node, t->d);
+							break;
+						}
+					case CASES_LIST_TYPE_ZFORMULA: 
+						{
+							//case_edit_zformula_create(node, t->d);
+							break;
+						}
+					case CASES_LIST_TYPE_XRAY: 
+						{
+							//case_edit_xray_create(node, t->d);
+							break;
+						}
+					case CASES_LIST_TYPE_PLANLECHENIYA: 
+						{
+							//case_edit_plan_lecheniya_create(node, t->d);
+							break;
+						}
+
+					default:
+						break;
+				}
+				return CBCONTINUE;
+			}
+		
+		case 'a':
+			{
+				// add new case
+				prozubi_case_new_for_patient(t->d->p, t->patient->id);
+				cases_list_update(t);
+				return CBCONTINUE;
+			}
+		
+		case 'r':
+			{
+				// refresh list
+				cases_list_update(t);
+				return CBCONTINUE;
+			}
+
+		case KEY_MOUSE:
+			{
+				MEVENT event;
+				if (getmouse(&event) == OK) {
+					if (!wenclose(t->s->ncwin->overlay, event.y, event.x))	
+						return CBBREAK;
+					
+					ungetmouse(&event);
+				}
+				break;
+			}
+
+		default:
+			break;
+	}
+
+	return 0;
+};
+
+
 void 
 cases_list_update(struct cases_list_t *t)
 {
-	cases_list_free(t);
-	
-	t->list = MALLOC(8, 
-			error_callback(t->d->cases, "cant't allocate memory for pointer"),
-			return);
-	t->nodes = MALLOC(8,
-			error_callback(t->d->cases, "cant't allocate memory for pointer"),
-			return);
+	cases_list_free(t);	
+	t->list = malloc(8); 
+	t->nodes = malloc(8);
 	
 	prozubi_cases_foreach(
 			t->d->p, 
@@ -309,41 +392,22 @@ cases_list_update(struct cases_list_t *t)
 			cases_list_get_list
 			);
 	
-	setCDKSelectionItems(t->s, t->list, t->count);
-	refreshCDKScreen(t->d->cases);
+	nc_list_set_value(t->s, t->list, t->count);
 }
 
 void
 cases_list_create(delegate_t *d, struct passport_t *patient)
 {
-	/* init window and screen */
-	screen_init_cases(d, LINES/2, COLS/2, LINES/4, COLS/4, COLOR_BLACK_ON_WHITE);
-	
-	char * choises[] = 
-	{""};
-	
-	CDKSELECTION 
-		*s =
-					newCDKSelection(
-							d->cases, 
-							0, 
-							0, 
-							0,
-							LINES/2,
-							COLS/2,
-							"</B>Посещения:<!B>", 
-							NULL, 
-							0, 
-							choises,
-							1,
-							A_REVERSE,
-							FALSE, 
-							FALSE
-							);
-
-	wbkgd(s->shadowWin, COLOR_PAIR(COLOR_BLACK_ON_WHITE));
-	setCDKSelectionBackgroundColor(s, "</57>");
-	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, NULL);\
+	nclist_t *s =
+			nc_list_new(NULL, 
+					"</B>Посещения:<!B>", 
+					LINES - 10, COLS - 20, 5, 10, 
+					COLOR_BLACK_ON_WHITE,
+					NULL, 
+					0, 
+					TRUE, 
+					TRUE
+					);
 
 	struct cases_list_t t;
 	t.d = d;
@@ -354,19 +418,6 @@ cases_list_create(delegate_t *d, struct passport_t *patient)
 	t.s = s;
 	
 	cases_list_update(&t);
-	
-	setCDKSelectionPreProcess (s, cases_list_preHandler, &t);
-	setCDKSelectionPostProcess (s, screen_update_postHandler, &t);
-	
-	info_pannel_set_text(d, 
-			"CTRL-q - закрыть, ENTER - редактировать");
-	
-	/* start traverse */
-	traverseCDKScreen(d->cases);
-
-	/* destroy widgets */
-	destroyCDKSelection(s);
-
-	screen_destroy_cases(d);
-	
+	nc_list_activate(s, &t, cases_list_callback_);
+	nc_list_destroy(s);
 }

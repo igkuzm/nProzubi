@@ -2,7 +2,7 @@
  * File              : CaseEdit.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 27.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -20,73 +20,143 @@
 #include "error.h"
 #include "Xray.h"
 #include "PlanLecheniya.h"
-#include "InfoPannel.h"
 #include "TextUTF8Handler.h"
+#include "ncwidgets/src/nclist.h"
+#include "ncwidgets/src/keys.h"
+#include "ncwidgets/src/utils.h"
+#include "ncwidgets/src/ncentry.h"
+#include "ncwidgets/src/ncselection.h"
 #include "input.h"
+
+typedef struct {
+	delegate_t *d;
+	struct case_list_node *node;
+	void *data;
+} case_edit_t;
+
+CBRET case_edit_text_callback(void *userdata, enum SCREEN type, void *object, chtype key)
+{
+	ncentry_t *s = object;
+	case_edit_t *t = userdata;
+	switch (key) {
+		case CTRL('s'):
+			{
+				//save
+				char *text = ucharstr2str(s->info);
+				if (text){
+					prozubi_case_set_text(t->node->key, t->d->p, t->node->c, text);
+					free(text);
+				}
+				return CBBREAK;
+			}
+		
+		case KEY_MOUSE:
+			{
+				MEVENT event;
+				if (getmouse(&event) == OK) {
+					if (!wenclose(s->ncwin->overlay, event.y, event.x)){
+						//save
+						char *text = ucharstr2str(s->info);
+						if (text){
+							prozubi_case_set_text(t->node->key, t->d->p, t->node->c, text);
+							free(text);
+						}
+						return CBBREAK;
+					}	
+					
+					ungetmouse(&event);
+				}
+				break;
+			}
+
+		case KEY_ESC:
+			return CBBREAK;
+	
+		default:
+			break;
+	}
+
+	return 0;
+}
 
 void
 case_edit_text_create(
 		struct case_list_node *node,
 		delegate_t *d)
 {	
-	/* init window and screen */
-	screen_init_textEdit(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
-
 	char title[BUFSIZ];
 	sprintf(title, "</B>%s:<!B>", node->title);
-	CDKMENTRY *m =
-		newCDKMentry (
-		d->textEdit	/* cdkscreen */,
-		0		/* xpos */,
-	  0		/* ypos */,
-	 	title	/* title */,
-		"" /* label */,
-		A_NORMAL|COLOR_PAIR(COLOR_BLACK_ON_CYAN)		/* fieldAttr */,
-		//A_NORMAL		/* fieldAttr */,
-		' '		/* filler */,
-		vMIXED	/* disptype */,
-		COLS/3	/* fieldWidth */,
-		LINES/3		/* fieldrows */,
-		LINES*2		/* logicalRows */,
-		0		/* min */,
-		FALSE		/* Box */,
-		FALSE		/* shadow */
-		);
-	
-	if (!m){
-		error_callback(d->textEdit, "can't draw CDKMENTRY - the screen is too small");
-		return;
-	}
-	
-	setCDKMentryBackgroundColor(m, COLOR_N(COLOR_BLACK_ON_CYAN));
-	bindCDKObject (vMENTRY, m, KEY_MOUSE, input_mouse_handler, NULL);\
-	
+		
 	char *value = prozubi_case_get(node->c, node->key); 
 	if (node->key == CASEDIAGNOZIS)
 		if (!value || strlen(value) <  2)
 			value = prozubi_diagnosis_get(d->p, node->c);
 	if (!value)
 		value = "";
-	setCDKMentryValue(m, value);
-	m->currentCol = 0;
-	m->currentRow = 0;
-	size_t text_position = 0;
-	setCDKMentryPreProcess (m, mentry_text_preHandler, &text_position);
 
-	info_pannel_set_text(d, 
-			"ESC - отмена, ENTER - сохранить");
-	/* activate */
-	//traverseCDKScreen(screen);
+	ncentry_t *s = 
+			nc_entry_new(
+					NULL, 
+					title, 
+					LINES/2, COLS/2, LINES/4, COLS/4, 
+					COLOR_BLACK_ON_CYAN, 
+					value, 
+					TRUE, 
+					TRUE, 
+					TRUE
+					);
 
-	char * ret = activateCDKMentry(m, NULL);
-	if (ret)
-		prozubi_case_set_text(node->key, d->p, node->c, ret);
+	case_edit_t t = {d, node, NULL};
+	nc_entry_activate(s, &t, case_edit_text_callback);
+	nc_entry_destroy(s);
+}
+
+CBRET case_edit_combobox_callback(void *userdata, enum SCREEN type, void *object, chtype key)
+{
+	ncselection_t *s = object;
+	case_edit_t *t = userdata;
+	switch (key) {
+		case CTRL('s'):
+			{
+				//save
+				int i;
+				for (i = 0; i < s->size; ++i) {
+					if (s->selected[i] == 1)
+						prozubi_case_set_text(t->node->key, t->d->p, t->node->c, t->node->array[i]);
+				}
+		
+				return CBBREAK;
+			}
+		
+		case KEY_MOUSE:
+			{
+				MEVENT event;
+				if (getmouse(&event) == OK) {
+					if (!wenclose(s->nclist->ncwin->overlay, event.y, event.x)){
+						//save
+						int index = 0;
+						int i;
+						for (i = 0; i < s->size; ++i) {
+							if (s->selected[i] == 1)
+								index = i;
+						}
+						prozubi_case_set_text(t->node->key, t->d->p, t->node->c, t->node->array[index]);
+						return CBBREAK;
+					}	
+					
+					ungetmouse(&event);
+				}
+				break;
+			}
+
+		case KEY_ESC:
+			return CBBREAK;
 	
-	/* destroy widgets */
-	destroyCDKMentry(m);
-	screen_destroy_textEdit(d);
+		default:
+			break;
+	}
 
-	/* redraw CDK */
+	return 0;
 }
 
 void
@@ -97,57 +167,43 @@ case_edit_combobox_create(
 	char *value = prozubi_case_get(node->c, node->key); 
 	if (!value)
 		value = "";
+
+	int selected[10] = {0};
 	
-	int selected = 0;
 	int i = 0;
 	while (node->array[i]){
-		char *item = node->array[i++];
+		char *item = node->array[i];
 		if (strcmp(item, value) == 0)
-			selected = i -1;
+			selected[i] = 1;
+		else
+			selected[i] = 0;
+		i++;
 	}
 
-	/* init window and screen */
 	int w = 40, h = i + 2;
 	int x = COLS/3 + COLS/6 - w/2, y = LINES/3 + LINES/6 - h/2;
-	screen_init_combobox(d, h, w , y, x, COLOR_BLACK_ON_CYAN);
-	CDKRADIO *m = newCDKRadio (
-		d->combobox	/* cdkscreen */,
-		0		/* xpos */,
-		0		/* ypos */,
-		0		/* spos */,
-		i+2		/* height */,
-		COLS/3		/* width */,
-		node->title	/* title */,
-		node->array	/* mesg */,
-		i		/* items */,
-		'*'		/* choiceChar */,
-		selected		/* defItem */,
-		A_REVERSE		/* highlight */,
-		FALSE		/* Box */,
-		FALSE		/* shadow */
-		);
-
-	if (!m){
-		error_callback(d->cases, "can't draw CDKITEMLIST - the screen os too small");
-		return;
-	}
-
-	setCDKItemlistBackgroundColor(m, COLOR_N(COLOR_BLACK_ON_CYAN));
-	bindCDKObject (vRADIO, m, KEY_MOUSE, input_mouse_handler, NULL);\
 	
-	info_pannel_set_text(d, 
-			"ESC - отмена, ENTER - сохранить");
-
-	/* activate */
-	activateCDKRadio(m, NULL);
-	int ret = m->selectedItem;
-	if (ret != -1)
-		prozubi_case_set_text(node->key, d->p, node->c, node->array[ret]);
+	char *selections[] = {"[ ] ", "[*] "};
 	
-	/* destroy widgets */
-	destroyCDKRadio(m);
+	ncselection_t *s = 
+			nc_selection_new(
+					NULL, 
+					node->title, 
+					h, w, y, x, 
+					COLOR_BLACK_ON_CYAN, 
+					selections,
+					2, 
+					selected, 
+					FALSE,
+					node->array, 
+					i, 
+					TRUE, 
+					TRUE
+					);
 
-	screen_destroy_combobox(d);
+	case_edit_t t = {d, node, s};
+	nc_selection_activate(s, &t, case_edit_combobox_callback);
+	nc_selection_destroy(s);
 }
 
 void
@@ -159,13 +215,13 @@ case_edit_date_create(
 	/* init window and screen */
 	int w = 24, h = 12;
 	int x = COLS/3 + COLS/6 - w/2, y = LINES/3 + LINES/6 - h/2;
-	screen_init_date(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
+	screen_init_screen_date(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
 	
 	time_t *value = prozubi_case_get(node->c, node->key); 
 	struct tm *tp = localtime(value);
 	
 	CDKCALENDAR *m = newCDKCalendar (
-	d->date	/* screen */,
+	d->screen_date	/* screen */,
 	0		/* xPos */,
 	0		/* yPos */,
 	node->title	/* title */,
@@ -181,17 +237,17 @@ case_edit_date_create(
 	);
 
 	if (!m){
-		error_callback(d->cases, "can't draw CDKCALENDAR - the screen is too small");
+		error_callback(d->screen_cases, "can't draw CDKCALENDAR - the screen is too small");
 		return;
 	}
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
 	wbkgd(m->fieldWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
 	wbkgd(m->labelWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
 
-	bindCDKObject (vCALENDAR, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vCALENDAR, m, KEY_MOUSE, input_mouse_handler, d);\
 	
-	info_pannel_set_text(d, 
-			"ESC - отмена, ENTER - сохранить");
+	/*info_pannel_set_text(d, */
+			/*"ESC - отмена, ENTER - сохранить");*/
 	/* activate */
 	time_t ret = activateCDKCalendar(m, NULL);
 	if (ret != -1){
@@ -202,7 +258,7 @@ case_edit_date_create(
 	
 	/* destroy widgets */
 	destroyCDKCalendar(m);
-	screen_destroy_date(d);
+	screen_destroy_screen_date(d);
 }
 
 static int 
@@ -378,7 +434,7 @@ case_edit_zformula_create(
 	int w = 100, h = 10;
 	int x = COLS/3 + COLS/6 - w/2, y = LINES/3 + LINES/6 - h/2;
 
-	screen_init_zformula(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
+	screen_init_screen_zformula(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
 
 	int colwidth[16] = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 	int coltypes[16] = {
@@ -403,7 +459,7 @@ case_edit_zformula_create(
 
 
 	CDKMATRIX *m = newCDKMatrix (
-	d->zformula	/* cdkscreen */,
+	d->screen_zformula	/* cdkscreen */,
 	0		/* xpos */,
 	0		/* ypos */,
 	2		/* rows */,
@@ -425,14 +481,14 @@ case_edit_zformula_create(
 			);
 
 	if (!m){
-		error_callback(d->cases, "can't draw CDKMATRIX - the screen os too small");
+		error_callback(d->screen_cases, "can't draw CDKMATRIX - the screen is too small");
 		return;
 	}
 
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
 	setCDKMatrixBackgroundColor(m, COLOR_N(COLOR_BLACK_ON_CYAN));
 	
-	bindCDKObject (vMATRIX, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vMATRIX, m, KEY_MOUSE, input_mouse_handler, d);\
 
 #define TOOTH(n, row, col)\
 	{\
@@ -450,8 +506,8 @@ case_edit_zformula_create(
 
 		setCDKMatrixPreProcess (m, zformula_preHandler, values);
 
-	info_pannel_set_text(d, 
-			"ESC - отмена, ENTER - сохранить, TAB, p, c, r, n, 0, l, k, t, i - заполнение формулы");
+	/*info_pannel_set_text(d, */
+			/*"ESC - отмена, ENTER - сохранить, TAB, p, c, r, n, 0, l, k, t, i - заполнение формулы");*/
 	/* activate */
 	int ret = activateCDKMatrix(m, NULL);
 	if (ret == 1){
@@ -469,7 +525,7 @@ case_edit_zformula_create(
 	/* destroy widgets */
 	destroyCDKMatrix(m);
 
-	screen_destroy_zformula(d);
+	screen_destroy_screen_zformula(d);
 
 }
 
@@ -486,7 +542,7 @@ case_edit_xray_create(
 		struct case_list_node *node,
 		delegate_t *d)
 {
-	info_pannel_set_text(d, 
-			"ESC - отмена, ENTER - открыть, а - добавить, d - удалить");
+	/*info_pannel_set_text(d, */
+			/*"ESC - отмена, ENTER - открыть, а - добавить, d - удалить");*/
 	xray_create(node, d);
 }

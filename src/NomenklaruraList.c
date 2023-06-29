@@ -2,7 +2,7 @@
  * File              : NomenklaruraList.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 06.06.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 26.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -12,8 +12,9 @@
 #include "colors.h"
 #include "input.h"
 #include "error.h"
-#include "InfoPannel.h"
 #include "TextUTF8Handler.h"
+#include <cdk/cdkscreen.h>
+#include <curses.h>
 
 struct nomenklatura_list_t {
 	delegate_t *d;
@@ -42,7 +43,7 @@ nomenklatura_list_add_price(struct nomenklatura_list_t *t, int index)
 	int selection;
 
 	CDKDIALOG *m = newCDKDialog (
-	d->nomenklatura	/* cdkscreen */,
+	d->screen_nomenklatura	/* cdkscreen */,
 	CENTER		/* xPos */,
 	CENTER		/* yPos */,
 	message	/* message */,
@@ -56,7 +57,7 @@ nomenklatura_list_add_price(struct nomenklatura_list_t *t, int index)
 			);
 
 	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_MAGENTA));
-	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vDIALOG, m, KEY_MOUSE, input_mouse_handler, d);\
 
 	/* Activate the entry field. */
 	activateCDKDialog(m, NULL);
@@ -77,7 +78,7 @@ nomenklatura_list_add_price(struct nomenklatura_list_t *t, int index)
 	}
 	
 	destroyCDKDialog(m);
-	refreshCDKScreen(d->nomenklatura);
+	refreshCDKScreen(d->screen_nomenklatura);
 }
 
 
@@ -87,7 +88,7 @@ nomenklatura_list_update_callback(void *userdata, void *parent, nomenklatura_t *
 	t->nomenklaturas[t->count] = nomenklatura;
 	
 	t->titles[t->count] = MALLOC(256, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_nomenklatura, "can't allocate memory"), return 0);
 	
 	if (parent == NULL)
 		snprintf(t->titles[t->count], 255, "</U>%s<!U>", 
@@ -99,10 +100,10 @@ nomenklatura_list_update_callback(void *userdata, void *parent, nomenklatura_t *
 	t->count++;
 
 	t->nomenklaturas = REALLOC(t->nomenklaturas, t->count * 8 + 8, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_nomenklatura, "can't allocate memory"), return 0);
 	
 	t->titles = REALLOC(t->titles, t->count * 8 + 8, 
-			error_callback(t->d->priceList, "can't allocate memory"), return 0);
+			error_callback(t->d->screen_nomenklatura, "can't allocate memory"), return 0);
 
 	return t->titles;
 }
@@ -125,13 +126,13 @@ void
 nomenklatura_list_update(struct nomenklatura_list_t *t) 
 {
 	nomenklatura_list_free(t);
-	t->nomenklaturas = MALLOC(8, error_callback(t->d->priceList, "can't allocate memory"), return);
-	t->titles = MALLOC(8, error_callback(t->d->priceList, "can't allocate memory"), return);
+	t->nomenklaturas = MALLOC(8, error_callback(t->d->screen_nomenklatura, "can't allocate memory"), return);
+	t->titles = MALLOC(8, error_callback(t->d->screen_nomenklatura, "can't allocate memory"), return);
 
 	prozubi_nomenklatura_foreach(t->d->p, t, nomenklatura_list_update_callback);
 	
 	setCDKSelectionItems(t->s, t->titles, t->count);
-	refreshCDKScreen(t->d->nomenklatura);
+	refreshCDKScreen(t->d->screen_nomenklatura);
 }
 
 static int 
@@ -149,9 +150,13 @@ nomenklatura_list_preHandler (EObjectType cdktype GCC_UNUSED, void *object,
 				nomenklatura_list_add_price(t, selected);
 				break;
 			}
+		case KEY_LEFT: case KEY_RIGHT: case KEY_UP: case KEY_DOWN:
+			refreshCDKScreen(((CDKOBJS *)object)->screen);
+			return 1;
+
 		case 'q': case CTRL('q'):
 			{
-				exitOKCDKScreen(t->d->nomenklatura);
+				exitOKCDKScreen(t->d->screen_nomenklatura);
 				return 0;
 			}
 
@@ -174,14 +179,14 @@ nomenklatura_list_create(
 			const char *kod))
 {
 	/* init window and screen */
-	screen_init_nomenklatura(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
+	screen_init_screen_nomenklatura(d, LINES/3, COLS/3, LINES/3, COLS/3, COLOR_BLACK_ON_CYAN);
 	char * choises[] = 
 	{""};
 	
 	CDKSELECTION 
 		*s =
 					newCDKSelection(
-							d->nomenklatura, 
+							d->screen_nomenklatura, 
 							0, 
 							0, 
 							0,
@@ -199,7 +204,7 @@ nomenklatura_list_create(
 
 	d->casesList = s;
 	setCDKSelectionBackgroundColor(s, COLOR_N(COLOR_BLACK_ON_CYAN));
-	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, NULL);\
+	bindCDKObject (vSELECTION, s, KEY_MOUSE, input_mouse_handler, d);\
 
 	struct nomenklatura_list_t t;
 	t.d = d;
@@ -212,15 +217,15 @@ nomenklatura_list_create(
 	setCDKSelectionPreProcess (s, nomenklatura_list_preHandler, &t);
 	setCDKSelectionPostProcess (s, screen_update_postHandler, NULL);
 	
-	info_pannel_set_text(d, 
-			"CTRL-q - закрыть, ENTER - редактировать");
+	/*info_pannel_set_text(d, */
+			/*"CTRL-q - закрыть, ENTER - редактировать");*/
 	
 	/* start traverse */
-	traverseCDKScreen(d->nomenklatura);
+	traverseCDKScreen(d->screen_nomenklatura);
 
 	/* destroy widgets */
 	destroyCDKSelection(s);
-	screen_destroy_nomenklatura(d);
 	nomenklatura_list_free(&t);
+	screen_destroy_screen_nomenklatura(d);
 }
 	

@@ -2,7 +2,7 @@
  * File              : delegate.h
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 08.06.2023
+ * Last Modified Date: 26.06.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -14,29 +14,38 @@
 #include <cdk/draw.h>
 #include <curses.h>
 #include "prozubilib/prozubilib.h"
+#include "prozubilib/enum.h"
 
 #define SCREENS\
-	SCREEN(cases, screen)\
-	SCREEN(patientEdit, screen)\
-	SCREEN(priceList, screen)\
-	SCREEN(xray, cases)\
-	SCREEN(planLecheniya, cases)\
-	SCREEN(planLecheniyaEdit, planLecheniya)\
-	SCREEN(zformula, cases)\
-	SCREEN(textEdit, cases)\
-	SCREEN(combobox, cases)\
-	SCREEN(date, cases)\
-	SCREEN(nomenklatura, priceList)\
-	SCREEN(imageselect, xray)\
-	SCREEN(imageshow, xray)\
+	SCREEN(screen_main, -1)\
+	SCREEN(screen_cases, screen_main)\
+	SCREEN(screen_patient_edit, screen_main)\
+	SCREEN(screen_price_list, screen_main)\
+	SCREEN(screen_xray, screen_cases)\
+	SCREEN(screen_plan_lecheniya, screen_cases)\
+	SCREEN(screen_plan_lecheniya_edit, screen_plan_lecheniya)\
+	SCREEN(screen_zformula, screen_cases)\
+	SCREEN(screen_text_edit, screen_cases)\
+	SCREEN(screen_combobox, screen_cases)\
+	SCREEN(screen_date, screen_cases)\
+	SCREEN(screen_nomenklatura, screen_price_list)\
+	SCREEN(screen_imageselect, screen_xray)\
+	SCREEN(screen_imageshow, screen_xray)\
+
+BEGIN_ENUM(SCREENTAG)
+#define SCREEN(name, ...) name,
+	SCREENS
+#undef SCREEN
+END_ENUM(SCREENTAG)
 
 typedef struct delegate_t {
 	prozubi_t *p;
-	CDKSCREEN *screen;
-	CDKSCREEN *selectedScreen;
+	CDKSCREEN *cdkscreen;
+	SCREENTAG selectedScreen;
 	CDKLABEL *infoPannel;
 	CDKSELECTION *patients;
 	CDKSELECTION *casesList;
+	void *mainMenuData;
 #define SCREEN(title, ...)\
 	CDKSCREEN * title;\
 	WINDOW * s_##title;\
@@ -57,8 +66,6 @@ static void delegate_init(
 		)
 {
 	d->p                  = NULL;
-	d->screen             = NULL;
-	d->infoPannel         = NULL;
 #define SCREEN(title, ...)\
 	d->title = NULL;\
 	d->s_##title = NULL;\
@@ -66,7 +73,7 @@ static void delegate_init(
 
 	SCREENS
 #undef SCREEN
-
+	d->mainMenuData       = NULL;
 	d->patients           = NULL;
 	d->casesList          = NULL;
 	d->imagesList         = NULL;
@@ -87,6 +94,7 @@ static CDKSCREEN * screen_init_##title(delegate_t *d, int h, int w, int y, int x
 	WINDOW *win = newwin(h, w, y, x);\
 	d->title = initCDKScreen(win);\
 	wbkgd(win, COLOR_PAIR(color));\
+	d->selectedScreen = title;\
 	return d->title;\
 }
 
@@ -107,6 +115,20 @@ static void screen_redraw_##title(delegate_t *d)\
 	SCREENS
 #undef SCREEN
 
+static void screen_redraw(
+						delegate_t *d,
+						SCREENTAG screen) 
+{
+	if (screen >= 0) {
+#define SCREEN(title, parent)\
+			if (screen == title){\
+				screen_redraw(d, parent);\
+				screen_redraw_##title(d);\
+			}
+	SCREENS
+#undef SCREEN
+	}
+}
 
 #define SCREEN(title, parent)\
 static void screen_destroy_##title(delegate_t *d)\
@@ -119,10 +141,22 @@ static void screen_destroy_##title(delegate_t *d)\
 	werase(d->b_##title);\
 	d->b_##title = NULL;\
 	werase(win);\
-	refreshCDKScreen(d->parent);\
+	screen_redraw(d, parent);\
 }
 
 	SCREENS
 #undef SCREEN
+
+static void screen_destroy(delegate_t *d, SCREENTAG screen)
+{
+	if (screen >= 0) {
+#define SCREEN(title, parent)\
+			if (screen == title){\
+				screen_destroy_##title(d);\
+			}
+	SCREENS
+#undef SCREEN
+	}
+}
 
 #endif /* ifndef DELEGATE_H */
