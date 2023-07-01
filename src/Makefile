@@ -106,10 +106,12 @@ am_nprozubi_OBJECTS = nprozubi-MainScreen.$(OBJEXT) \
 	nprozubi-TextUTF8Handler.$(OBJEXT) \
 	nprozubi-PriceList.$(OBJEXT) \
 	nprozubi-NomenklaruraList.$(OBJEXT) nprozubi-error.$(OBJEXT) \
-	nprozubi-input.$(OBJEXT) nprozubi-nclib.$(OBJEXT) \
+	nprozubi-input.$(OBJEXT) nprozubi-ncwidgets.$(OBJEXT) \
+	nprozubi-ncscreen.$(OBJEXT) nprozubi-nclabel.$(OBJEXT) \
 	nprozubi-nclist.$(OBJEXT) nprozubi-ncwin.$(OBJEXT) \
 	nprozubi-ncentry.$(OBJEXT) nprozubi-ncbutton.$(OBJEXT) \
-	nprozubi-ncselection.$(OBJEXT) nprozubi-main.$(OBJEXT)
+	nprozubi-ncselection.$(OBJEXT) nprozubi-nccalendar.$(OBJEXT) \
+	nprozubi-main.$(OBJEXT)
 nprozubi_OBJECTS = $(am_nprozubi_OBJECTS)
 am__DEPENDENCIES_1 =
 nprozubi_DEPENDENCIES = $(am__DEPENDENCIES_1) \
@@ -145,9 +147,12 @@ am__depfiles_remade = ./$(DEPDIR)/nprozubi-CaseEdit.Po \
 	./$(DEPDIR)/nprozubi-Xray.Po ./$(DEPDIR)/nprozubi-error.Po \
 	./$(DEPDIR)/nprozubi-input.Po ./$(DEPDIR)/nprozubi-main.Po \
 	./$(DEPDIR)/nprozubi-ncbutton.Po \
-	./$(DEPDIR)/nprozubi-ncentry.Po ./$(DEPDIR)/nprozubi-nclib.Po \
-	./$(DEPDIR)/nprozubi-nclist.Po \
+	./$(DEPDIR)/nprozubi-nccalendar.Po \
+	./$(DEPDIR)/nprozubi-ncentry.Po \
+	./$(DEPDIR)/nprozubi-nclabel.Po ./$(DEPDIR)/nprozubi-nclist.Po \
+	./$(DEPDIR)/nprozubi-ncscreen.Po \
 	./$(DEPDIR)/nprozubi-ncselection.Po \
+	./$(DEPDIR)/nprozubi-ncwidgets.Po \
 	./$(DEPDIR)/nprozubi-ncwin.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_$(V))
@@ -337,12 +342,15 @@ nprozubi_SOURCES = \
 									 NomenklaruraList.c NomenklaruraList.h\
 									 error.c error.h\
 									 input.c input.h\
-									 ncwidgets/src/nclib.c\
+									 ncwidgets/src/ncwidgets.c\
+									 ncwidgets/src/ncscreen.c\
+									 ncwidgets/src/nclabel.c\
 									 ncwidgets/src/nclist.c\
 									 ncwidgets/src/ncwin.c\
 									 ncwidgets/src/ncentry.c\
 									 ncwidgets/src/ncbutton.c\
 									 ncwidgets/src/ncselection.c\
+									 ncwidgets/src/nccalendar.c\
 									 main.c
 
 CDK_LIBS = -lpanelw -lcdkw -lncursesw -ltinfow
@@ -449,10 +457,13 @@ include ./$(DEPDIR)/nprozubi-error.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-input.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-main.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-ncbutton.Po # am--include-marker
+include ./$(DEPDIR)/nprozubi-nccalendar.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-ncentry.Po # am--include-marker
-include ./$(DEPDIR)/nprozubi-nclib.Po # am--include-marker
+include ./$(DEPDIR)/nprozubi-nclabel.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-nclist.Po # am--include-marker
+include ./$(DEPDIR)/nprozubi-ncscreen.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-ncselection.Po # am--include-marker
+include ./$(DEPDIR)/nprozubi-ncwidgets.Po # am--include-marker
 include ./$(DEPDIR)/nprozubi-ncwin.Po # am--include-marker
 
 $(am__depfiles_remade):
@@ -657,19 +668,47 @@ nprozubi-input.obj: input.c
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-input.obj `if test -f 'input.c'; then $(CYGPATH_W) 'input.c'; else $(CYGPATH_W) '$(srcdir)/input.c'; fi`
 
-nprozubi-nclib.o: ncwidgets/src/nclib.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nclib.o -MD -MP -MF $(DEPDIR)/nprozubi-nclib.Tpo -c -o nprozubi-nclib.o `test -f 'ncwidgets/src/nclib.c' || echo '$(srcdir)/'`ncwidgets/src/nclib.c
-	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nclib.Tpo $(DEPDIR)/nprozubi-nclib.Po
-#	$(AM_V_CC)source='ncwidgets/src/nclib.c' object='nprozubi-nclib.o' libtool=no \
+nprozubi-ncwidgets.o: ncwidgets/src/ncwidgets.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-ncwidgets.o -MD -MP -MF $(DEPDIR)/nprozubi-ncwidgets.Tpo -c -o nprozubi-ncwidgets.o `test -f 'ncwidgets/src/ncwidgets.c' || echo '$(srcdir)/'`ncwidgets/src/ncwidgets.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-ncwidgets.Tpo $(DEPDIR)/nprozubi-ncwidgets.Po
+#	$(AM_V_CC)source='ncwidgets/src/ncwidgets.c' object='nprozubi-ncwidgets.o' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nclib.o `test -f 'ncwidgets/src/nclib.c' || echo '$(srcdir)/'`ncwidgets/src/nclib.c
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-ncwidgets.o `test -f 'ncwidgets/src/ncwidgets.c' || echo '$(srcdir)/'`ncwidgets/src/ncwidgets.c
 
-nprozubi-nclib.obj: ncwidgets/src/nclib.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nclib.obj -MD -MP -MF $(DEPDIR)/nprozubi-nclib.Tpo -c -o nprozubi-nclib.obj `if test -f 'ncwidgets/src/nclib.c'; then $(CYGPATH_W) 'ncwidgets/src/nclib.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nclib.c'; fi`
-	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nclib.Tpo $(DEPDIR)/nprozubi-nclib.Po
-#	$(AM_V_CC)source='ncwidgets/src/nclib.c' object='nprozubi-nclib.obj' libtool=no \
+nprozubi-ncwidgets.obj: ncwidgets/src/ncwidgets.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-ncwidgets.obj -MD -MP -MF $(DEPDIR)/nprozubi-ncwidgets.Tpo -c -o nprozubi-ncwidgets.obj `if test -f 'ncwidgets/src/ncwidgets.c'; then $(CYGPATH_W) 'ncwidgets/src/ncwidgets.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/ncwidgets.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-ncwidgets.Tpo $(DEPDIR)/nprozubi-ncwidgets.Po
+#	$(AM_V_CC)source='ncwidgets/src/ncwidgets.c' object='nprozubi-ncwidgets.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nclib.obj `if test -f 'ncwidgets/src/nclib.c'; then $(CYGPATH_W) 'ncwidgets/src/nclib.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nclib.c'; fi`
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-ncwidgets.obj `if test -f 'ncwidgets/src/ncwidgets.c'; then $(CYGPATH_W) 'ncwidgets/src/ncwidgets.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/ncwidgets.c'; fi`
+
+nprozubi-ncscreen.o: ncwidgets/src/ncscreen.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-ncscreen.o -MD -MP -MF $(DEPDIR)/nprozubi-ncscreen.Tpo -c -o nprozubi-ncscreen.o `test -f 'ncwidgets/src/ncscreen.c' || echo '$(srcdir)/'`ncwidgets/src/ncscreen.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-ncscreen.Tpo $(DEPDIR)/nprozubi-ncscreen.Po
+#	$(AM_V_CC)source='ncwidgets/src/ncscreen.c' object='nprozubi-ncscreen.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-ncscreen.o `test -f 'ncwidgets/src/ncscreen.c' || echo '$(srcdir)/'`ncwidgets/src/ncscreen.c
+
+nprozubi-ncscreen.obj: ncwidgets/src/ncscreen.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-ncscreen.obj -MD -MP -MF $(DEPDIR)/nprozubi-ncscreen.Tpo -c -o nprozubi-ncscreen.obj `if test -f 'ncwidgets/src/ncscreen.c'; then $(CYGPATH_W) 'ncwidgets/src/ncscreen.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/ncscreen.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-ncscreen.Tpo $(DEPDIR)/nprozubi-ncscreen.Po
+#	$(AM_V_CC)source='ncwidgets/src/ncscreen.c' object='nprozubi-ncscreen.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-ncscreen.obj `if test -f 'ncwidgets/src/ncscreen.c'; then $(CYGPATH_W) 'ncwidgets/src/ncscreen.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/ncscreen.c'; fi`
+
+nprozubi-nclabel.o: ncwidgets/src/nclabel.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nclabel.o -MD -MP -MF $(DEPDIR)/nprozubi-nclabel.Tpo -c -o nprozubi-nclabel.o `test -f 'ncwidgets/src/nclabel.c' || echo '$(srcdir)/'`ncwidgets/src/nclabel.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nclabel.Tpo $(DEPDIR)/nprozubi-nclabel.Po
+#	$(AM_V_CC)source='ncwidgets/src/nclabel.c' object='nprozubi-nclabel.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nclabel.o `test -f 'ncwidgets/src/nclabel.c' || echo '$(srcdir)/'`ncwidgets/src/nclabel.c
+
+nprozubi-nclabel.obj: ncwidgets/src/nclabel.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nclabel.obj -MD -MP -MF $(DEPDIR)/nprozubi-nclabel.Tpo -c -o nprozubi-nclabel.obj `if test -f 'ncwidgets/src/nclabel.c'; then $(CYGPATH_W) 'ncwidgets/src/nclabel.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nclabel.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nclabel.Tpo $(DEPDIR)/nprozubi-nclabel.Po
+#	$(AM_V_CC)source='ncwidgets/src/nclabel.c' object='nprozubi-nclabel.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nclabel.obj `if test -f 'ncwidgets/src/nclabel.c'; then $(CYGPATH_W) 'ncwidgets/src/nclabel.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nclabel.c'; fi`
 
 nprozubi-nclist.o: ncwidgets/src/nclist.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nclist.o -MD -MP -MF $(DEPDIR)/nprozubi-nclist.Tpo -c -o nprozubi-nclist.o `test -f 'ncwidgets/src/nclist.c' || echo '$(srcdir)/'`ncwidgets/src/nclist.c
@@ -740,6 +779,20 @@ nprozubi-ncselection.obj: ncwidgets/src/ncselection.c
 #	$(AM_V_CC)source='ncwidgets/src/ncselection.c' object='nprozubi-ncselection.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-ncselection.obj `if test -f 'ncwidgets/src/ncselection.c'; then $(CYGPATH_W) 'ncwidgets/src/ncselection.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/ncselection.c'; fi`
+
+nprozubi-nccalendar.o: ncwidgets/src/nccalendar.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nccalendar.o -MD -MP -MF $(DEPDIR)/nprozubi-nccalendar.Tpo -c -o nprozubi-nccalendar.o `test -f 'ncwidgets/src/nccalendar.c' || echo '$(srcdir)/'`ncwidgets/src/nccalendar.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nccalendar.Tpo $(DEPDIR)/nprozubi-nccalendar.Po
+#	$(AM_V_CC)source='ncwidgets/src/nccalendar.c' object='nprozubi-nccalendar.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nccalendar.o `test -f 'ncwidgets/src/nccalendar.c' || echo '$(srcdir)/'`ncwidgets/src/nccalendar.c
+
+nprozubi-nccalendar.obj: ncwidgets/src/nccalendar.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-nccalendar.obj -MD -MP -MF $(DEPDIR)/nprozubi-nccalendar.Tpo -c -o nprozubi-nccalendar.obj `if test -f 'ncwidgets/src/nccalendar.c'; then $(CYGPATH_W) 'ncwidgets/src/nccalendar.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nccalendar.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/nprozubi-nccalendar.Tpo $(DEPDIR)/nprozubi-nccalendar.Po
+#	$(AM_V_CC)source='ncwidgets/src/nccalendar.c' object='nprozubi-nccalendar.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -c -o nprozubi-nccalendar.obj `if test -f 'ncwidgets/src/nccalendar.c'; then $(CYGPATH_W) 'ncwidgets/src/nccalendar.c'; else $(CYGPATH_W) '$(srcdir)/ncwidgets/src/nccalendar.c'; fi`
 
 nprozubi-main.o: main.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(nprozubi_CFLAGS) $(CFLAGS) -MT nprozubi-main.o -MD -MP -MF $(DEPDIR)/nprozubi-main.Tpo -c -o nprozubi-main.o `test -f 'main.c' || echo '$(srcdir)/'`main.c
@@ -969,10 +1022,13 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/nprozubi-input.Po
 	-rm -f ./$(DEPDIR)/nprozubi-main.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncbutton.Po
+	-rm -f ./$(DEPDIR)/nprozubi-nccalendar.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncentry.Po
-	-rm -f ./$(DEPDIR)/nprozubi-nclib.Po
+	-rm -f ./$(DEPDIR)/nprozubi-nclabel.Po
 	-rm -f ./$(DEPDIR)/nprozubi-nclist.Po
+	-rm -f ./$(DEPDIR)/nprozubi-ncscreen.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncselection.Po
+	-rm -f ./$(DEPDIR)/nprozubi-ncwidgets.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncwin.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1034,10 +1090,13 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/nprozubi-input.Po
 	-rm -f ./$(DEPDIR)/nprozubi-main.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncbutton.Po
+	-rm -f ./$(DEPDIR)/nprozubi-nccalendar.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncentry.Po
-	-rm -f ./$(DEPDIR)/nprozubi-nclib.Po
+	-rm -f ./$(DEPDIR)/nprozubi-nclabel.Po
 	-rm -f ./$(DEPDIR)/nprozubi-nclist.Po
+	-rm -f ./$(DEPDIR)/nprozubi-ncscreen.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncselection.Po
+	-rm -f ./$(DEPDIR)/nprozubi-ncwidgets.Po
 	-rm -f ./$(DEPDIR)/nprozubi-ncwin.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

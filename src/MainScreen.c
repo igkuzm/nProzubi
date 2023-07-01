@@ -2,13 +2,13 @@
  * File              : MainScreen.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 26.06.2023
- * Last Modified Date: 27.06.2023
+ * Last Modified Date: 01.07.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
 #include "MainScreen.h"
 #include "ncwidgets/src/keys.h"
-#include "ncwidgets/src/nclib.h"
+#include "ncwidgets/src/ncwidgets.h"
 #include "ncwidgets/src/nclist.h"
 #include "ncwidgets/src/ncscreen.h"
 

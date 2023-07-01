@@ -15,12 +15,15 @@ nprozubi_SOURCES = \
 									 NomenklaruraList.c NomenklaruraList.h\
 									 error.c error.h\
 									 input.c input.h\
-									 ncwidgets/src/nclib.c\
+									 ncwidgets/src/ncwidgets.c\
+									 ncwidgets/src/ncscreen.c\
+									 ncwidgets/src/nclabel.c\
 									 ncwidgets/src/nclist.c\
 									 ncwidgets/src/ncwin.c\
 									 ncwidgets/src/ncentry.c\
 									 ncwidgets/src/ncbutton.c\
 									 ncwidgets/src/ncselection.c\
+									 ncwidgets/src/nccalendar.c\
 									 main.c
 
 CDK_LIBS = -lpanelw -lcdkw -lncursesw -ltinfow

@@ -2,7 +2,7 @@
  * File              : CasesList.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 27.06.2023
+ * Last Modified Date: 01.07.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -318,7 +318,8 @@ CBRET cases_list_callback_(void *userdata, enum SCREEN type, void *object, chtyp
 						}
 					case CASES_LIST_TYPE_DATE: 
 						{
-							//case_edit_date_create(node, t->d);
+							case_edit_date_create(node, t->d);
+							cases_list_update(t);
 							break;
 						}
 					case CASES_LIST_TYPE_ZFORMULA: 

@@ -2,7 +2,7 @@
  * File              : CaseEdit.c
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 15.05.2023
- * Last Modified Date: 27.06.2023
+ * Last Modified Date: 01.07.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -26,6 +26,7 @@
 #include "ncwidgets/src/utils.h"
 #include "ncwidgets/src/ncentry.h"
 #include "ncwidgets/src/ncselection.h"
+#include "ncwidgets/src/nccalendar.h"
 #include "input.h"
 
 typedef struct {
@@ -206,59 +207,112 @@ case_edit_combobox_create(
 	nc_selection_destroy(s);
 }
 
+CBRET case_edit_date_callback(void *userdata, enum SCREEN type, void *object, chtype key)
+{
+	nccalendar_t *s = object;
+	case_edit_t *t = userdata;
+	switch (key) {
+		case KEY_ENTER: case KEY_RETURN:
+			{
+				//save
+				time_t value = mktime(s->tm);
+				if (value != -1)
+					prozubi_case_set_date(t->node->key, t->d->p, t->node->c, value);
+				return CBBREAK;
+			}
+		
+		case KEY_MOUSE:
+			{
+				MEVENT event;
+				if (getmouse(&event) == OK) {
+					if (!wenclose(s->ncwin->overlay, event.y, event.x))
+						return CBBREAK;
+					ungetmouse(&event);
+				}
+				break;
+			}
+
+		case KEY_ESC:
+			return CBBREAK;
+	
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+
 void
 case_edit_date_create(
 		struct case_list_node *node,
 		delegate_t *d)
 {
 
+	time_t *value = prozubi_case_get(node->c, node->key); 
+	
 	/* init window and screen */
 	int w = 24, h = 12;
 	int x = COLS/3 + COLS/6 - w/2, y = LINES/3 + LINES/6 - h/2;
-	screen_init_screen_date(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
-	
-	time_t *value = prozubi_case_get(node->c, node->key); 
-	struct tm *tp = localtime(value);
-	
-	CDKCALENDAR *m = newCDKCalendar (
-	d->screen_date	/* screen */,
-	0		/* xPos */,
-	0		/* yPos */,
-	node->title	/* title */,
-	tp->tm_mday		/* day */,
-	tp->tm_mon + 1		/* month */,
-	tp->tm_year + 1900		/* year */,
-	A_NORMAL    /* dayAttrib */,
-	A_NORMAL    /* monthAttrib */,
-	A_NORMAL    /* yearAttrib */,
-	A_REVERSE /* highlight */,
-	FALSE		/* Box */,
-	FALSE		/* shadow */
-	);
 
-	if (!m){
-		error_callback(d->screen_cases, "can't draw CDKCALENDAR - the screen is too small");
-		return;
-	}
-	wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
-	wbkgd(m->fieldWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
-	wbkgd(m->labelWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
+	nccalendar_t *m = 
+			nc_calendar_new(
+					NULL, 
+					node->title, 
+					y, x, 
+					COLOR_BLACK_ON_CYAN, 
+					*value, 
+					1, 
+					TRUE, 
+					TRUE);
 
-	bindCDKObject (vCALENDAR, m, KEY_MOUSE, input_mouse_handler, d);\
+	case_edit_t t = {d, node, NULL};
+	nc_calendar_activate(m, &t, case_edit_date_callback);
+	nc_calendar_destroy(m);
+
+	//screen_init_screen_date(d, h, w, y, x, COLOR_BLACK_ON_CYAN);
 	
-	/*info_pannel_set_text(d, */
-			/*"ESC - отмена, ENTER - сохранить");*/
-	/* activate */
-	time_t ret = activateCDKCalendar(m, NULL);
-	if (ret != -1){
-		//error_callback(d->date, STR("timezone: %ld", timezone));
-		ret -= timezone; 
-		prozubi_case_set_date(node->key, d->p, node->c, ret);
-	}
+	//struct tm *tp = localtime(value);
 	
-	/* destroy widgets */
-	destroyCDKCalendar(m);
-	screen_destroy_screen_date(d);
+	//CDKCALENDAR *m = newCDKCalendar (
+	//d->screen_date	[> screen <],
+	//0		[> xPos <],
+	//0		[> yPos <],
+	//node->title	[> title <],
+	//tp->tm_mday		[> day <],
+	//tp->tm_mon + 1		[> month <],
+	//tp->tm_year + 1900		[> year <],
+	//A_NORMAL    [> dayAttrib <],
+	//A_NORMAL    [> monthAttrib <],
+	//A_NORMAL    [> yearAttrib <],
+	//A_REVERSE [> highlight <],
+	//FALSE		[> Box <],
+	//FALSE		[> shadow <]
+	//);
+
+	//if (!m){
+		//error_callback(d->screen_cases, "can't draw CDKCALENDAR - the screen is too small");
+		//return;
+	//}
+	//wbkgd(m->win, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
+	//wbkgd(m->fieldWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
+	//wbkgd(m->labelWin, COLOR_PAIR(COLOR_BLACK_ON_CYAN));
+
+	//bindCDKObject (vCALENDAR, m, KEY_MOUSE, input_mouse_handler, d);\
+	
+	//[>info_pannel_set_text(d, <]
+			//[>"ESC - отмена, ENTER - сохранить");<]
+	//[> activate <]
+	//time_t ret = activateCDKCalendar(m, NULL);
+	//if (ret != -1){
+		////error_callback(d->date, STR("timezone: %ld", timezone));
+		//ret -= timezone; 
+		//prozubi_case_set_date(node->key, d->p, node->c, ret);
+	//}
+	
+	//[> destroy widgets <]
+	//destroyCDKCalendar(m);
+	//screen_destroy_screen_date(d);
 }
 
 static int 
